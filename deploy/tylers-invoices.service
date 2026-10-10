@@ -1,0 +1,19 @@
+[Unit]
+Description=Private invoice workspace
+After=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/services/tylers-invoices
+EnvironmentFile=%h/.config/tylers-invoices/runtime.env
+ExecStart=%h/services/tylers-invoices/.venv/bin/python server.py
+Restart=on-failure
+RestartSec=5
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+MemoryMax=256M
+TasksMax=32
+
+[Install]
+WantedBy=default.target
