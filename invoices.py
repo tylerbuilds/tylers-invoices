@@ -240,7 +240,7 @@ def sync_brain(invoice,folder):
     if attachment.exists() and attachment.read_bytes()!=content: raise ValueError('Existing Obsidian attachment differs; preserve it and check the conflict')
     atomic(attachment,content)
     safe=lambda value: re.sub(r'([\\`*_{}\[\]()<>#!|])',r'\\\1',str(value)).replace('\n',' ')
-    note=f"---\ntype: invoice\ninvoice_id: {invoice['id']}\nstatus: {invoice['status']}\ndate: {invoice['date']}\ndue: {invoice['due']}\ncurrency: {invoice['currency']}\namount: {invoice['total']}\n---\n\n# {invoice['id']}\n\nCustomer: {safe(invoice['customer']['name'])} ({safe(invoice['customer']['email'])})\n\n"
+    note=f"---\ntype: invoice\ninvoice_id: {invoice['id']}\nstatus: {invoice['status']}\ndate: {invoice['date']}\ndue: {invoice['due']}\ncurrency: {invoice['currency']}\namount: {invoice['total']}\n---\n\n# {invoice.get('invoice_number') or invoice['id']}\n\nCustomer: {safe(invoice['customer']['name'])} ({safe(invoice['customer']['email'])})\n\n"
     for i in invoice['items']: note+=f"- {safe(i['description'])}: {i['quantity']} {safe(i['unit'])} at {invoice['currency']} {i['rate']} = {i['amount']}\n"
     note+=f"\nTotal: {invoice['currency']} {invoice['total']}\n\n[[Attachments/Tylers Invoices/{invoice['id']}.pdf|Invoice PDF]]\n\nPrepared locally; sending needs a current approval and a delivery receipt.\n"
     if invoice.get('imported'):
@@ -274,15 +274,19 @@ def import_pdf(content, metadata):
     except (subprocess.SubprocessError,ValueError,OSError) as exc: raise ValueError('Unable to read PDF within import limits (10 MB, 50 pages, 12 seconds, 128 MB)') from exc
     digest=hashlib.sha256(content).hexdigest(); identifier='IMP-'+digest[:24]
     source=text(metadata.get('source','Manual PDF upload'),'Source',True)
-    customer=text(metadata.get('customer','Unconfirmed customer'),'Customer',True)
-    total=metadata.get('total','')
+    from import_details import extract_details
+    detected=extract_details(extracted,metadata.get('filename',''))
+    details=detected.get('customer',{})
+    customer=text(metadata.get('customer') or details.get('name') or 'Customer not found','Customer',True)
+    total=metadata.get('total',detected.get('total',''))
     total=money(decimal(total,'total',True)) if total else ''
-    currency=metadata.get('currency',settings()['currency'])
+    currency=metadata.get('currency',detected.get('currency',settings()['currency']))
     if currency not in ['GBP','EUR','USD']: raise ValueError('Unsupported currency')
-    date=metadata.get('date','')
+    date=metadata.get('date',detected.get('date',''))
     if date: dt.date.fromisoformat(date)
-    invoice=dict(id=identifier,imported=True,customer={'name':customer,'email':metadata.get('customer_email',''),'address':''},
-                 currency=currency,total=total,date=date,due='',items=[],sender=settings(),notes='',created_at=dt.datetime.now(dt.timezone.utc).isoformat(),
+    invoice=dict(id=identifier,imported=True,customer={'name':customer,'email':email(metadata.get('customer_email',details.get('email','')),False),'address':text(metadata.get('customer_address',details.get('address','')),'Customer address',False)},
+                 invoice_number=text(metadata.get('invoice_number',detected.get('invoice_number','')),'Invoice number',False,80),
+                 currency=currency,total=total,date=date,due=detected.get('due',''),items=[],sender=settings(),notes='',created_at=dt.datetime.now(dt.timezone.utc).isoformat(),
                  original_filename=Path(metadata.get('filename','invoice.pdf')).name,extracted_text=extracted,source=source,sha256=digest)
     atomic(DATA/'imports'/f'{identifier}.pdf',content)
     with database() as db:
@@ -304,6 +308,14 @@ def review_import(identifier, values):
     if not invoice.get('imported'): raise ValueError('Only imports can be edited here')
     invoice['customer']['name']=text(values.get('customer',''),'Customer name')
     invoice['customer']['email']=email(values.get('customer_email',''),False)
+    invoice['customer']['address']=text(values.get('customer_address',invoice['customer'].get('address','')),'Customer address',False)
+    invoice['invoice_number']=text(values.get('invoice_number',invoice.get('invoice_number','')),'Invoice number',False,80)
+    reference=values.get('customer_reference')
+    if reference:
+        existing=get(reference)['customer']
+        if existing['name'] in ('Unconfirmed customer','Customer not found'):raise ValueError('Choose a known customer')
+        invoice['customer']=dict(existing)
+        invoice['customer_reference']=reference
     invoice['total']=money(decimal(values.get('total',''),'total',True))
     invoice['date']=str(dt.date.fromisoformat(values['date']))
     invoice['currency']=values.get('currency','GBP')

@@ -179,3 +179,16 @@ another gateway. Report the real exit status and smoke-check JSON.
 ```
 
 If invoking the CLI, `openclaw agent --agent <your-agent-id> --message <message>` runs a turn through your existing gateway. Choose the agent that owns the project. Don't add `--deliver` for setup checks. Check your installed CLI's help for its supported flags. A timeout or a text claim without a tool result is not a passing check.
+
+PDF import reads labelled customer/billing fields, invoice number, invoice date,
+due date, currency and total from the original text. It keeps the original PDF
+and starts in review; it never assumes a PDF was sent. If a field is unreadable,
+check the original rather than inventing it. Import metadata can override
+`customer`, `customer_email`, `customer_address` and `invoice_number`.
+
+To reuse an existing customer after import, call `review-import` with the usual
+customer/date/total fields and `customer_reference` set to the ID of an existing
+invoice. This explicitly uses that invoice's customer name, email and billing
+address for this record. It preserves the source PDF and other invoice records.
+The web review form offers the same choice and previews the selected details.
+Imported customers are available in the New invoice saved-customer selector.

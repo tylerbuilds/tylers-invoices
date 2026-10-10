@@ -85,10 +85,24 @@ function statusControls(i, el, render) {
   });
   el.append(details);
 }
+function knownCustomers() {
+  const seen = new Set();
+  return (state?.invoices || []).filter(i => {
+    const c = i.customer;
+    if (!c?.name || ['Unconfirmed customer', 'Customer not found'].includes(c.name)) return false;
+    const key = [c.name.toLowerCase(), c.email.toLowerCase(), c.address].join('|');
+    if (seen.has(key)) return false;
+    seen.add(key); return true;
+  });
+}
 function recordHeader(i) {
   const head = node('div', '');
   head.className = 'record-head';
-  head.append(node('h3', i.imported ? i.customer.name : i.id + ' · ' + i.customer.name));
+  const title = node('div', '');
+  const number = node('h3', i.invoice_number || (i.imported ? 'Number not found' : i.id));
+  number.className = 'invoice-number';
+  title.append(number, node('p', i.customer.name));
+  head.append(title);
   const badge = node('span', statusName(i.status || 'prepared'));
   badge.className = 'badge';
   head.append(badge);
@@ -122,8 +136,17 @@ async function refresh() {
   records.replaceChildren();
   if (!state.invoices.length) records.append(node('p', 'No invoices yet.'));
   state.invoices.forEach(i => records.append(card(i)));
+  const customerSelect = $('#saved-customer');
+  customerSelect.replaceChildren(new Option('New customer', ''));
+  knownCustomers().forEach(c => customerSelect.append(new Option(c.customer.name + (c.customer.email ? ' · ' + c.customer.email : ''), c.id)));
   total();
 }
+$('#saved-customer').onchange = e => {
+  const c = state.invoices.find(x => x.id === e.target.value)?.customer;
+  if (!c) return;
+  for (const k of ['name','email','address']) $('#invoice-form').elements.namedItem('customer_' + k).value = c[k] || '';
+  requestKey = crypto.randomUUID();
+};
 $('#settings-form').onsubmit = async e => {
   e.preventDefault();
   try {
@@ -150,10 +173,12 @@ $('#invoice-form').onsubmit = async e => {
 };
 const date = new Date();
 $('#invoice-form').elements.date.value = date.toISOString().slice(0, 10);
-date.setDate(date.getDate() + 30);
-$('#invoice-form').elements.due.value = date.toISOString().slice(0, 10);
+
 addItem();
 refresh().then(() => {
+  const due = new Date($('#invoice-form').elements.date.value + 'T12:00:00');
+  due.setDate(due.getDate() + Number(state.settings.due_days));
+  $('#invoice-form').elements.due.value = due.toISOString().slice(0, 10);
   if (!state.settings.name) { notice('Add your details to get started.'); tab('settings'); }
 }).catch(e => notice(e.message));
 
@@ -167,17 +192,31 @@ function importedCard(i) {
   edit.append(node('summary', i.status === 'imported_review' ? 'Check invoice details' : 'Edit details'));
   const form = document.createElement('form');
   form.className = 'grid';
-  for (const [k, label, val, type] of [['customer', 'Customer', i.customer.name, 'text'], ['customer_email', 'Email', i.customer.email, 'email'], ['total', 'Total', i.total, 'number'], ['date', 'Invoice date', i.date, 'date'], ['currency', 'Currency', i.currency, 'text']]) {
+  for (const [k, label, val, type] of [['invoice_number', 'Invoice number', i.invoice_number || '', 'text'], ['customer', 'Customer', i.customer.name === 'Unconfirmed customer' || i.customer.name === 'Customer not found' ? '' : i.customer.name, 'text'], ['customer_address', 'Billing address', i.customer.address || '', 'text'], ['customer_email', 'Email', i.customer.email, 'email'], ['total', 'Total', i.total, 'number'], ['date', 'Invoice date', i.date, 'date'], ['currency', 'Currency', i.currency, 'text']]) {
     const l = node('label', label), input = document.createElement('input');
     input.name = k;
     input.value = val;
     input.type = type;
     if (k === 'total') { input.step = '0.01'; input.min = '0'; }
-    input.required = k !== 'customer_email';
+    input.required = !['customer_email','customer_address','invoice_number'].includes(k);
     l.append(input);
     form.append(l);
   }
-  form.append(node('button', 'Save details'));
+  const mergeLabel = node('label', 'Customer');
+  const merge = document.createElement('select');
+  merge.name = 'customer_reference';
+  merge.append(new Option('Save the customer details above', ''));
+  knownCustomers().forEach(c => merge.append(new Option('Use saved customer: ' + c.customer.name + (c.customer.email ? ' · ' + c.customer.email : ''), c.id)));
+  const matches = knownCustomers().filter(c => c.id !== i.id && c.customer.name.toLowerCase() === i.customer.name.toLowerCase());
+  if (matches.length) form.append(node('p', 'This customer already has invoices here. Keep these details or choose the saved customer below.'));
+  mergeLabel.append(merge);
+  form.append(mergeLabel);
+  const mergeInfo = node('p', '');
+  merge.onchange = () => {
+    const c = state.invoices.find(x => x.id === merge.value);
+    mergeInfo.textContent = c ? 'Use ' + c.customer.name + ', ' + c.customer.email + ', ' + c.customer.address + '. This keeps the original PDF and other invoices unchanged.' : '';
+  };
+  form.append(mergeInfo, node('button', 'Save details'));
   form.onsubmit = async e => {
     e.preventDefault();
     try {
