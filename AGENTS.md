@@ -48,3 +48,11 @@ Follow [docs/agent-setup.md](docs/agent-setup.md) for initial setup. Run `./star
 OpenClaw can use the bundled scoped `tylers_invoices` tool; start with its `doctor` and `smoke` actions. See the setup guide for plugin configuration. Register this project in your existing agent workspace instructions, keeping the current execution and approval gates. If a shell tool rejects the route, use the organisation's approved capability or dispatch route; don't bypass it or claim success. Test discovery and execution from the actual agent, not only from an operator shell.
 
 Imports can be corrected with `review-import ID --json FILE` only while in review. Sent, paid and cancelled imports are immutable. CLI changes require another `export ID --sync-brain` to update the vault; web changes attempt that export automatically. Server-side export paths are not local paths for a remote HTTP client: download `/files/{id}/invoice.pdf` and the corresponding email draft routes.
+
+For OpenClaw, operation fields belong inside `values`, not beside `action`:
+
+```json
+{"action":"prepare","values":{"request_key":"example-2026-10-v1","customer":{"name":"Example Ltd","email":"accounts@example.org","address":"2 Example Street"},"date":"2026-10-10","items":[{"description":"Work on 1 October 2026","quantity":"1","rate":"300.00","unit":"days"}]}}
+```
+
+`doctor` returns `prepare_contract` with required fields. Use `rate`, not `unit_price`; `customer` is an object, not a string. To reuse a customer, call `list`, then `show` on its previous invoice. An imported record may have an empty customer address: inspect its original `extracted_text` for the billing address, or ask the owner. A failed call now returns the missing field or validation message; use that actual error when retrying. Never claim creation without the returned invoice ID, and export that ID for its PDF.
