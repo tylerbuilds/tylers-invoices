@@ -1,10 +1,96 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Tyler's invoices</title><link rel="stylesheet" href="/style.css"><script src="/app.js" defer></script></head><body>
-<header><span class="brand">TI<span class="dot">.</span></span><div><h1>Tyler's invoices</h1><p>Make it. Check it. Send it.</p></div><span class="local">● Private workspace</span></header>
-<main><div id="notice" role="status"></div><nav><button data-tab="create" class="active">New invoice</button><button data-tab="records">Your invoices</button><button data-tab="import">Import invoices</button><button data-tab="settings">Settings</button></nav>
-<section id="create"><div class="intro"><p class="eyebrow">LESS ADMIN, MORE WORK</p><h2>A few details. One clean invoice.</h2><p>Add your work and rates. We’ll prepare the PDF and email drafts for you to review.</p></div>
-<form id="invoice-form"><div class="card"><h3>Who’s it for?</h3><div class="grid"><label>Customer / company<input name="customer_name" required placeholder="Acme Studio"></label><label>Customer email<input name="customer_email" type="email" required placeholder="accounts@example.com"></label></div><label>Billing address<textarea name="customer_address" required rows="2"></textarea></label><div class="grid"><label>Invoice date<input name="date" type="date" required></label><label>Due date<input name="due" type="date" required></label></div></div>
-<div class="card"><h3>What did you do?</h3><div id="items"></div><button type="button" id="add-item" class="secondary">+ Add another line</button><div class="total">Total <strong id="total">GBP 0.00</strong></div><label>Notes (optional)<textarea name="notes" rows="2" placeholder="Project dates, reference, or a thank you"></textarea></label></div><button type="submit">Prepare invoice</button><p class="hint">Creates a local record. Nothing is sent.</p></form><div id="prepared"></div></section>
-<section id="records" hidden><h2>Your invoices</h2><p>Prepared drafts, delivery receipts and payment records.</p><div id="invoice-list"></div></section>
-<section id="import" hidden><h2>Bring your invoices with you.</h2><p>Drop a PDF to keep the original and extract its text. Confirm the customer, amount and date before recording it as sent.</p><div id="dropzone" class="card"><h3>Drop invoice PDFs here</h3><label>Or choose files<input type="file" id="import-files" accept="application/pdf,.pdf" multiple></label><p class="hint">PDF only · 10 MB per file · Identical files are deduplicated</p></div><div id="import-results"></div><div class="card"><h3>Ask Zeus to find old invoices</h3><p>“Search my sent emails for customer invoices and import them here, keeping the PDF and source message.”</p><p>Zeus can use your existing email connection and this app’s JSON interface. Self-previews, supplier receipts and forwarded bills need separate review.</p></div></section>
-<section id="settings" hidden><h2>Your details</h2><p>Saved on this computer. Each invoice keeps its own copy.</p><form id="settings-form" class="card"><div class="grid"><label>Legal name / company<input name="name" required></label><label>Sender email<input name="email" type="email" required></label></div><label>Address<textarea name="address" required rows="3"></textarea></label><label>Payment details<textarea name="payment_details" required rows="3" placeholder="Account name, sort code, account number or payment instructions"></textarea></label><div class="grid"><label>Your preview email<input name="preview_email" type="email" required></label><label>Currency<select name="currency"><option>GBP</option><option>EUR</option><option>USD</option></select></label><label>Payment terms (days)<input name="due_days" type="number" min="0" max="365"></label><label>Invoice prefix<input name="prefix" pattern="[A-Z][A-Z0-9-]{0,15}"></label><label>Next number<input name="next_number" type="number" min="1"></label></div><label>Obsidian vault path<input name="vault" required></label><button>Save settings</button></form></section>
-<footer>Agent ready · PDF + attached email drafts + Obsidian records<br>Send approvals stay with you and Zeus.</footer></main></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tyler's invoices</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+<header>
+  <span class="brand">TI<span class="dot">.</span></span>
+  <h1>Tyler's invoices</h1>
+  <span class="local">Private</span>
+</header>
+<main>
+  <div id="notice" role="status"></div>
+  <nav>
+    <button data-tab="create" class="active">New invoice</button>
+    <button data-tab="records">Invoices</button>
+    <button data-tab="import">Import</button>
+    <button data-tab="settings">Settings</button>
+  </nav>
+  <section id="create">
+    <h2>New invoice</h2>
+    <form id="invoice-form">
+      <div class="card">
+        <h3>Customer</h3>
+        <div class="grid">
+          <label>Name or company<input name="customer_name" required placeholder="Acme Studio"></label>
+          <label>Email<input name="customer_email" type="email" required placeholder="accounts@example.com"></label>
+        </div>
+        <label>Billing address<textarea name="customer_address" required rows="2"></textarea></label>
+        <div class="grid">
+          <label>Invoice date<input name="date" type="date" required></label>
+          <label>Due date<input name="due" type="date" required></label>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Work</h3>
+        <div id="items"></div>
+        <button type="button" id="add-item" class="secondary">+ Add line</button>
+        <div class="total">Total <strong id="total">GBP 0.00</strong></div>
+        <label>Notes (optional)<textarea name="notes" rows="2" placeholder="Project name, dates or reference"></textarea></label>
+      </div>
+      <button type="submit">Create invoice</button>
+      <p class="hint">Saves the invoice without sending it.</p>
+    </form>
+    <div id="prepared"></div>
+  </section>
+  <section id="records" hidden>
+    <h2>Invoices</h2>
+    <div id="invoice-list"></div>
+  </section>
+  <section id="import" hidden>
+    <h2>Import invoices</h2>
+    <div id="dropzone" class="card">
+      <h3>Drop PDFs here</h3>
+      <label>Or choose files<input type="file" id="import-files" accept="application/pdf,.pdf" multiple></label>
+      <p class="hint">Up to 10 MB each. The same PDF is only saved once.</p>
+    </div>
+    <div id="import-results"></div>
+    <details class="card">
+      <summary>Import from email with Zeus</summary>
+      <p>Ask Zeus: “Find the invoices I’ve sent to customers and import them here.”</p>
+      <p>It can keep each PDF with a link to the sent email.</p>
+    </details>
+  </section>
+  <section id="settings" hidden>
+    <h2>Settings</h2>
+    <form id="settings-form" class="card">
+      <h3>Your invoice details</h3>
+      <div class="grid">
+        <label>Name or company<input name="name" required></label>
+        <label>Your work email<input name="email" type="email" required></label>
+      </div>
+      <label>Address<textarea name="address" required rows="3"></textarea></label>
+      <label>Bank or payment details<textarea name="payment_details" required rows="3" placeholder="Account name, sort code and account number"></textarea></label>
+      <div class="grid">
+        <label>Email for your previews<input name="preview_email" type="email" required></label>
+        <label>Currency<select name="currency"><option>GBP</option><option>EUR</option><option>USD</option></select></label>
+        <label>Days to pay<input name="due_days" type="number" min="0" max="365"></label>
+        <label>Invoice prefix<input name="prefix" pattern="[A-Z][A-Z0-9-]{0,15}"></label>
+        <label>Next invoice number<input name="next_number" type="number" min="1"></label>
+      </div>
+      <details>
+        <summary>Second brain</summary>
+        <p>Save a copy of each invoice in Obsidian.</p>
+        <label>Obsidian folder<input name="vault"></label>
+      </details>
+      <button>Save settings</button>
+    </form>
+  </section>
+</main>
+</body>
+</html>

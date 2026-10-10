@@ -52,7 +52,7 @@ class Handler(BaseHTTPRequestHandler):
         except (ValueError,KeyError,TypeError) as exc: self.respond({'error':str(exc)},400)
     def do_POST(self):
         if not self.authorised(): return
-        if not self.trusted() or self.headers.get('X-Invoice-Token')!=TOKEN: return self.respond({'error':'Refresh this local page'},403)
+        if not self.trusted() or self.headers.get('X-Invoice-Token')!=TOKEN: return self.respond({'error':'Refresh the page and try again.'},403)
         try:
             size=int(self.headers.get('Content-Length','0'))
             if not 0<size<15000000: raise ValueError('Request too large or empty')
@@ -66,11 +66,11 @@ class Handler(BaseHTTPRequestHandler):
             else: return self.respond({'error':'Not found'},404)
             if path in ['/api/prepare','/api/import','/api/review-import','/api/record'] and app.settings()['vault']:
                 try: result['brain_note']=app.export(result['id'],sync=True)['brain_note']
-                except (ValueError,OSError) as exc: result['brain_warning']='Saved locally. Second brain needs retry: '+str(exc)
+                except (ValueError,OSError) as exc: result['brain_warning']='Your invoice is saved, but the Obsidian copy failed. '+str(exc)
             self.respond(result)
         except (ValueError,KeyError,TypeError) as exc: self.respond({'error':str(exc)},400)
         except Exception as exc:
-            self.log_error('%s',exc); self.respond({'error':'Operation failed. Your saved invoice is retained; check the local log.'},500)
+            self.log_error('%s',exc); self.respond({'error':'Something went wrong. Any invoice already saved is still in your invoice list.'},500)
 
 if __name__=='__main__':
     print("Tyler's invoices: http://127.0.0.1:8767",flush=True)
