@@ -16,7 +16,7 @@ Everything private lives in ignored `data/`: settings, SQLite database, PDFs, im
 2. Download the PDF or the preview email draft. Open `.eml` in a compatible email application; the PDF is attached and the preview is addressed to you.
 3. Review the recipient, dates, lines, total and payment details. Send the customer draft manually, or ask your agent to use its existing approved mail connection.
 4. Record the actual sent-message receipt, then the payment receipt when paid.
-5. Save to second brain. The app writes only its generated notes under `01_Projects/tylers-invoices/Invoices` and PDFs under `Attachments/Tylers Invoices`. Manual notes belong in separate notes. It does not change scheduler ownership, Command Centre state or qmd indexes.
+5. With a vault configured, web changes automatically save to second brain; the Save button retries a deferred write. The app writes only its generated notes under `01_Projects/tylers-invoices/Invoices` and PDFs under `Attachments/Tylers Invoices`. Manual notes belong in separate notes. It does not change scheduler ownership, Command Centre state or qmd indexes.
 
 Nothing sends mail automatically. Email sending is performed by your mail application or existing agent transport, under its current approval rules. This app has no power to approve sends. A recorded receipt is operator/agent-supplied evidence, not independent delivery verification.
 

@@ -64,6 +64,9 @@ class Handler(BaseHTTPRequestHandler):
             elif path=='/api/review-import': result=app.review_import(data.pop('id'),data)
             elif path=='/api/record': result=app.record(data['id'],data['status'],data['receipt'])
             else: return self.respond({'error':'Not found'},404)
+            if path in ['/api/prepare','/api/import','/api/review-import','/api/record'] and app.settings()['vault']:
+                try: result['brain_note']=app.export(result['id'],sync=True)['brain_note']
+                except (ValueError,OSError) as exc: result['brain_warning']='Saved locally. Second brain needs retry: '+str(exc)
             self.respond(result)
         except (ValueError,KeyError,TypeError) as exc: self.respond({'error':str(exc)},400)
         except Exception as exc:

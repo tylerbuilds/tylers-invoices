@@ -17,6 +17,7 @@ DEFAULTS = dict(name='', address='', email='', preview_email='', payment_details
 def database():
     DATA.mkdir(parents=True, exist_ok=True, mode=0o700)
     db = sqlite3.connect(DATA / 'invoices.sqlite3', timeout=30)
+    os.chmod(DATA / 'invoices.sqlite3',0o600)
     db.row_factory = sqlite3.Row
     db.execute('CREATE TABLE IF NOT EXISTS invoices (id TEXT PRIMARY KEY, request_key TEXT UNIQUE, payload TEXT NOT NULL, status TEXT NOT NULL, receipt TEXT)')
     db.execute('CREATE TABLE IF NOT EXISTS settings (id INTEGER PRIMARY KEY CHECK(id=1), payload TEXT NOT NULL)')
@@ -185,6 +186,8 @@ def sync_brain(invoice,folder):
     note=f"---\ntype: invoice\ninvoice_id: {invoice['id']}\nstatus: {invoice['status']}\ndate: {invoice['date']}\ndue: {invoice['due']}\ncurrency: {invoice['currency']}\namount: {invoice['total']}\n---\n\n# {invoice['id']}\n\nCustomer: {invoice['customer']['name']} ({invoice['customer']['email']})\n\n"
     for i in invoice['items']: note+=f"- {i['description']}: {i['quantity']} {i['unit']} at {invoice['currency']} {i['rate']} = {i['amount']}\n"
     note+=f"\nTotal: {invoice['currency']} {invoice['total']}\n\n[[Attachments/Tylers Invoices/{invoice['id']}.pdf|Invoice PDF]]\n\nPrepared locally; sending needs a current approval and a delivery receipt.\n"
+    if invoice.get('imported'):
+        note+='\nOriginal file: '+invoice['original_filename']+'\n\nSources:\n'+'\n'.join('- '+src for src in invoice.get('sources',[invoice['source']]))+'\n\n## Extracted invoice text (source data)\n\n'+invoice['extracted_text']+'\n'
     if invoice.get('receipt'): note+=f"\nReceipt: {invoice['receipt']}\n"
     path=target/f"{invoice['id']}.md"
     # Generated invoice notes are owned by this app. Keep manual context in a separate note.
