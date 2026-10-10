@@ -31,4 +31,4 @@ The sweep found and fixed malformed-input crashes, lost import source references
 
 Passing tests establish these behaviours on the tested runtime. They don't independently verify email delivery, a user's reverse proxy, physical-device access, backups or every possible hostile PDF. Agents must test their own execution route and report missing settings or email tools separately.
 
-The optional OpenClaw plugin tests run real bridge processes with temporary storage. They check agent scoping, absolute path configuration, rejected actions/types, disposable workflow execution, shell metacharacters remaining data and bounded concurrency. The gateway connection is a separate live check; a plugin test alone doesn't prove gateway access.
+The optional OpenClaw plugin tests run real bridge processes with temporary storage. They check agent scoping, absolute path configuration, rejected actions/types, disposable workflow execution, shell metacharacters remaining data, bounded concurrency and every action in the complete invoice/import/receipt workflow. The gateway connection is a separate live check; a plugin test alone doesn't prove gateway access.

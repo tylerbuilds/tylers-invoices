@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync, existsSync } from 'node:fs';
+import { mkdtempSync, rmSync, existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { resolve, join } from 'node:path';
 import { createInvoiceTool, invoiceEnvironment } from './runtime.mjs';
@@ -72,4 +72,34 @@ test('gateway secrets and Python injection variables are not inherited', () => {
   assert.equal(env.NODE_OPTIONS, undefined);
   assert.equal(env.TYLER_INVOICES_DATA, '/canonical');
   assert.equal(env.HOME, '/home/example');
+});
+
+test('every invoice action works through the real scoped bridge', async () => {
+  const folder = mkdtempSync(join(tmpdir(), 'invoice-plugin-workflow-'));
+  try {
+    const vault = join(folder, 'vault'); mkdirSync(vault);
+    const tool = toolFor(configFor(join(folder, 'data')));
+    const call = async (action, values = {}) => {
+      const response = await tool.execute('fixture', {action, values});
+      assert.equal(response.isError, false, JSON.stringify(response.details));
+      return response.details;
+    };
+    await call('settings', {name: 'Example', address: '1 Example Road', email: 'sender@example.com', preview_email: 'owner@example.com', payment_details: 'Fictional payment instructions', vault});
+    const request = {request_key: 'bridge-fixture', customer: {name: 'Example Client', email: 'client@example.org', address: '2 Example Road'}, items: [{description: 'Example work', quantity: '3', rate: '500'}], date: '2026-10-10'};
+    const invoice = await call('prepare', request);
+    assert.equal(invoice.total, '1500.00');
+    assert.equal((await call('prepare', request)).id, invoice.id);
+    const exported = await call('export', {id: invoice.id, sync_brain: true});
+    const pdf = readFileSync(exported.pdf);
+    assert.equal(existsSync(exported.brain_note), true);
+    const imported = await call('import', {pdf_base64: pdf.toString('base64'), filename: 'example.pdf', source: 'fixture:sent-message'});
+    await call('review-import', {id: imported.id, customer: 'Example Client', customer_email: 'client@example.org', total: '1500', date: '2026-10-10', currency: 'GBP'});
+    await call('record', {id: imported.id, status: 'sent', receipt: 'fixture:disposable-sent-message'});
+    await call('record', {id: imported.id, status: 'paid', receipt: 'fixture:disposable-payment'});
+    assert.equal((await call('show', {id: imported.id})).status, 'paid');
+    const original = await call('export', {id: imported.id, sync_brain: true});
+    assert.deepEqual(readFileSync(original.pdf), pdf);
+    assert.equal((await call('list')).length, 2);
+    assert.equal((await call('doctor')).ready_to_prepare, true);
+  } finally {rmSync(folder, {recursive: true, force: true});}
 });

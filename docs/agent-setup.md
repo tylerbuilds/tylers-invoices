@@ -149,6 +149,8 @@ openclaw plugins enable tylers-invoices --accept-capabilities
 openclaw plugins reload tylers-invoices --accept-capabilities --json
 ```
 
+If reload reports retained work, let that work finish and retry. If the runtime cannot recover, check for active tasks and calls before restarting the existing gateway with its service manager. Wait for its health/listening check before starting another test. Never start a second gateway.
+
 Do not replace your whole OpenClaw configuration or clear tool allow/deny lists. If your version validates required plugin settings during installation, add the plugin load path and complete entry in **one validated `openclaw config patch`**, preserving existing load paths. Use a config backup and dry run first. Don't disable governance hooks to make a shell command work.
 
 The tool takes `action` and an optional `values` object. Examples:
