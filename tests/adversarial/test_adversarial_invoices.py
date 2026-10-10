@@ -158,4 +158,10 @@ class AdversarialInvoices(unittest.TestCase):
         with ThreadPoolExecutor(max_workers=8) as pool:list(pool.map(update,range(40)))
         self.assertEqual(len(app.listing()),20);self.assertEqual(app.settings()['next_number'],21)
 
+    def test_date_type_and_calendar_overflow_fail_without_writes(self):
+        for value in (True,1,[],{},'9999-12-31'):
+            request=copy.deepcopy(self.request);request['date']=value
+            with self.subTest(value=value),self.assertRaises(ValueError):app.prepare(request)
+        self.assertEqual(app.listing(),[])
+
 if __name__=='__main__':unittest.main()

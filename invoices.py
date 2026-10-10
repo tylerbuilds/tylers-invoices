@@ -104,8 +104,12 @@ def prepare(request):
         if rate != rate.quantize(Decimal('.01')): raise ValueError('Rates support at most two decimal places')
         items.append(dict(description=text(row.get('description',''),'Description'), quantity=str(qty),
                           unit=text(row.get('unit','days'),'Unit',True,40), rate=money(rate), amount=money(qty*rate)))
-    date=dt.date.fromisoformat(request.get('date') or dt.date.today().isoformat())
-    due=dt.date.fromisoformat(request.get('due') or (date+dt.timedelta(days=conf['due_days'])).isoformat())
+    for key in ('date','due'):
+        if key in request and not isinstance(request[key],str): raise ValueError('Dates must be ISO date strings')
+    try:
+        date=dt.date.fromisoformat(text(request.get('date') or dt.date.today().isoformat(),'Invoice date',limit=10))
+        due=dt.date.fromisoformat(text(request.get('due') or (date+dt.timedelta(days=conf['due_days'])).isoformat(),'Due date',limit=10))
+    except (TypeError,OverflowError) as exc: raise ValueError('Invalid invoice or due date') from exc
     if due<date: raise ValueError('The due date must be on or after the invoice date.')
     invoice=dict(customer=customer,items=items,date=str(date),due=str(due),currency=conf['currency'],
                  notes=text(request.get('notes',''),'Notes',False),sender={k:conf[k] for k in ['name','address','email','payment_details','preview_email']},
