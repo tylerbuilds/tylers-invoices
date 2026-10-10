@@ -152,3 +152,13 @@ The retained adversarial tests cover malformed inputs, concurrent updates, numbe
 </details>
 
 [MIT licence](LICENSE).
+
+## Agent skill
+
+The reusable [`invoice` skill](skills/invoice/SKILL.md) covers creating invoices,
+PDF imports, customer matching, previews and delivery receipts. Install the
+`skills/invoice` folder into your agent’s skills directory, then use `/invoice`
+in OpenClaw or `$invoice` in Codex. Follow your existing skill publication
+workflow and verify discovery before relying on the command. The skill uses
+the scoped `tylers_invoices` tool described in [agent setup](docs/agent-setup.md);
+installing the skill does not grant mail access or customer-send approval.
