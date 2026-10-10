@@ -40,3 +40,11 @@ Download the original PDF to private storage, then pass an import JSON:
 `import --json` preserves/deduplicates the original PDF and starts in review. Confirm fields from the PDF, then record sent with the parent message reference. No outbound message is needed for an import. Do not import every search result blindly or treat a filename as proof of an invoice. Revised originals remain separate; explain superseded invoices to the owner before treating them as outstanding balances.
 
 For a remote instance, use its authenticated HTTP interface or run CLI commands on the hosting machine. Never create a second independent live invoice database. Do not put private details into commits, PRs or the public README.
+
+## Setup and readiness
+
+Follow [docs/agent-setup.md](docs/agent-setup.md) for initial setup. Run `./start --setup-only` to install without leaving a web process running. Run `invoices.py doctor` to report missing settings without exposing their values. `agent_smoke.py` proves the CLI workflow with disposable fictional data; it must report `ok: true`, `live_data_touched: false` and `emails_sent: 0`.
+
+OpenClaw can use the bundled scoped `tylers_invoices` tool; start with its `doctor` and `smoke` actions. See the setup guide for plugin configuration. Register this project in your existing agent workspace instructions, keeping the current execution and approval gates. If a shell tool rejects the route, use the organisation's approved capability or dispatch route; don't bypass it or claim success. Test discovery and execution from the actual agent, not only from an operator shell.
+
+Imports can be corrected with `review-import ID --json FILE` only while in review. Sent, paid and cancelled imports are immutable. CLI changes require another `export ID --sync-brain` to update the vault; web changes attempt that export automatically. Server-side export paths are not local paths for a remote HTTP client: download `/files/{id}/invoice.pdf` and the corresponding email draft routes.

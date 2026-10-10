@@ -1,0 +1,15 @@
+{
+  "name": "@tylerbuilds/tylers-invoices-openclaw",
+  "version": "0.1.0",
+  "type": "module",
+  "license": "MIT",
+  "openclaw": {
+    "extensions": [
+      "./index.mjs"
+    ],
+    "compat": {
+      "pluginApi": ">=2026.9.9",
+      "minGatewayVersion": ">=2026.9.9"
+    }
+  }
+}

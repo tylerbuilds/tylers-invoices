@@ -188,7 +188,7 @@ function importedCard(i) {
     } catch (e) { notice(e.message); }
   };
   edit.append(form);
-  el.append(edit);
+  if (i.status === 'imported_review') el.append(edit);
   statusControls(i, el, importedCard);
   const source = document.createElement('details');
   source.append(node('summary', 'Original file and email'));
