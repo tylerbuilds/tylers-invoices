@@ -3,6 +3,7 @@ import json, secrets, os, base64, hmac, hashlib, threading
 from http.server import ThreadingHTTPServer as BaseHTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlsplit
 import invoices as app
+from cloudflare_access import owner_authorised
 
 TOKEN=secrets.token_urlsafe(32)
 PUBLIC_HOST=os.environ.get('INVOICE_HOST','')
@@ -42,6 +43,7 @@ class Handler(BaseHTTPRequestHandler):
         return self.headers.get('Host') in [f'127.0.0.1:{self.server.server_port}',f'localhost:{self.server.server_port}',PUBLIC_HOST]
     def authorised(self):
         if not PUBLIC_HOST: return True
+        if owner_authorised(self.headers.get('Cf-Access-Jwt-Assertion')): return True
         try:
             header=self.headers.get('Authorization','')
             if not header.startswith('Basic ') or len(header)>2000: raise ValueError('Invalid credentials')

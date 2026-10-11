@@ -120,6 +120,17 @@ Use one always-on host and one live database. The browser doesn't hold your reco
 
 Public-host mode requires authentication on every request and refuses to start without `auth.json`. Local mode trusts loopback users; don't expose it by proxy without setting `INVOICE_HOST`. HTTPS and access controls remain the operator's responsibility. Requests have bounded concurrency and timeouts; this is a small single-owner service.
 
+For owner single sign-on, protect this hostname with a Cloudflare Access application
+and set `CF_ACCESS_ISSUER`, `CF_ACCESS_AUDIENCE`, `CF_ACCESS_ALLOWED_EMAIL` and
+`CF_ACCESS_ALLOWED_SUBJECT` in the host's native service configuration. The issuer
+must be your `https://TEAM.cloudflareaccess.com` address and the subject must come
+from an actually authenticated owner identity. The server verifies the RS256
+signature against that issuer's cached public keys, the exact audience, email and
+subject, required claims and expiry. Sessions can last up to 24 hours. Plain email
+headers cannot authorise requests. Basic authentication remains available for
+existing approved API clients; POST requests still require `X-Invoice-Token`.
+Keep credentials native and preserve all customer-send approval gates.
+
 ## Checks
 
 ```sh
